@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <link href='https://fonts.googleapis.com/css?family=Lato:300,900' rel='stylesheet' type='text/css'>
+    <title>Military expenditure</title>
+    <script type="text/javascript" src="https://d3js.org/d3.v5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/1.12.1/d3-annotation.min.js"></script>
+    <select id="selectButton"></select>
+    <button id="button" type="button">Click to go to next scene!</button>
+    <style type="text/css">
+        body{
+            background-color: whitesmoke;
+        }
+
+        :root {
+            --accent-color: #E8336D;
+        }
+
+        svg {
+            background-color: white;
+            font-family: 'Lato';
+        }
+
+        .annotation-note-title, text.title {
+            font-weight: bold;
+        }
+
+        path.line {
+            fill: none;
+            stroke: lightgrey;
+            stroke-width: 2px;
+        }
+
+        .annotation path {
+            stroke: var(--accent-color);
+            fill: none;
+        }
+
+        .annotation path.connector-arrow,
+        .title text, .annotation text,
+        .annotation.callout.circle .annotation-subject path{
+            fill: var(--accent-color);
+        }
+        .annotation-note-bg {
+            fill: rgba(255, 255, 255, 0);
+        }
+
+        .annotation-note-title {
+            font-weight: bold;
+        }
+
+        .annotation.xythreshold {
+            cursor: move;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        text.hover {
+            font-size: .7em;
+        }
+
+        text.title {
+            font-size: 1.1em;
+        }
+
+        #tooltip {
+            opacity: 0;
+            position: absolute;
+            text-align: center;
+            width: 60px; height: 40px;
+            background: white;
+            border: 0px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="tooltip"></div>
+
+<script>
+
+
+    // set the dimensions and margins of the graph
+    var margin = {top: 100, right: 20, bottom: 50, left: 150},
+        width = 1340 - margin.left - margin.right,
+        height = 870 - margin.top - margin.bottom;
+
+    // parse the date / time
+    var parseTime = d3.timeParse("%y");
+
+    // set the ranges
+    var x = d3.scaleLinear().range([0, width]);
+    var y = d3.scaleLinear().range([height, 0]);
+
+
+    // append the svg object to the body of the page
+    // appends a 'group' element to 'svg'
+    // moves the 'group' element to the top left margin
+    var svg = d3.select("body").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")");
+
+    var linePath = d3.line()
+        .defined(function(d) { return d.Value; })
+        .x(function(d) { return x(d.Year); })
+        .y(function(d) {return y(d.Value);});
+
+    var temp = 0;
+
+    var currentSlide = 0;
+
+    // Define the div for the tooltip
+    var tooltip = d3.select("#tooltip");
+
+
+
+    // Get the data
+    d3.csv("data_cleaned.csv").then(function(data) {
+
+        // List of groups (here I have one group per column)
+        var allGroup = d3.map(data, function(d){return(d.Name)}).keys()
+
+        // add the options to the button
+        d3.select("#selectButton").style("visibility", "hidden")
+            .selectAll('myOptions')
+            .data(allGroup)
+            .enter()
+            .append('option')
+            .text(function (d) { return d; }) // text showed in the menu
+            .attr("value", function (d) { return d; }) // corresponding value returned by the button
+
+
+
+
+        // format the data
+        data.forEach(function(d) {
+            d.Name = d.Name;
+            d.Year = d.Year;
+            d.Value = +d.Expenditure_USD;
+        });
+
+
+
+        // Initialize line with first group of the list
+        var line = svg
+            .append('g')
+            .append("path")
+            .datum(data.filter(function(d){return d.Name== allGroup[0]}))
+            .attr("class", "line")
+            .style("stroke", "#0F185B")
+            .attr("d", linePath)
+        ;
+
+        // A function that update the chart
+        function update(selectedGroup) {
+            // Create new data with the selection?
+            var dataFilter = data.filter(function(d){return d.Name==selectedGroup})
+            y.domain([d3.min(data, function(d) { return d.Value; }), d3.max(dataFilter, function(d) { return d.Value; })]);
+            d3.select(".y").transition(d3.transition()
+                .duration(1000)).call(d3.axisLeft(y));
+            // Give these new data to update line
+            line
+                .datum(dataFilter)
+                .transition()
+                .duration(1000)
+                .attr("d", linePath);
+  /*          line.on('mouseover', function (d) {
+                console.log(d[1])
+                tooltip.style('opacity', '1').style("left",(d3.event.pageX)+"px").style("top",(d3.event.pageY)+"px")
+                    .html("Year: "+d.Year+ "     " + "Value: " + d.Value)
+            })
+                .on('mouseout', function (d) {
+                    console.log("off")
+                    tooltip.style('opacity', '0')
+                })
+*/
+        }
+
+        // When the button is changed, run the updateChart function
+        d3.select("#selectButton").on("change", function(d) {
+            // recover the option that has been chosen
+            var selectedOption = d3.select(this).property("value")
+            // run the updateChart function with this selected option
+            update(selectedOption)
+        })
+
+        if (currentSlide == 0) {
+            const slidetext = svg.append("text").attr("x", 20).attr("y", 40).attr("fill", "black").attr("font-size", "18px").text("Welcome! Click the next scene button on the bottom left to take a journey through history!");
+        }
+
+
+        d3.select("#button").on("click", function(d) {
+            currentSlide++;
+            if (currentSlide == 1) {
+                d3.select("text").text("This graph shows military spending from 1960-2018. The x axis is year and the y axis is the amount in USD.");
+                console.log(currentSlide)
+            }
+            else if (currentSlide == 2) {
+                d3.select("text").text("Years that are missing values or are 0 are not shown.");
+                console.log(currentSlide)
+            }
+            else if (currentSlide == 3) {
+                d3.select("text").text("The chart shown currently is for the world's expenditure.");
+                console.log(currentSlide)
+            }
+            else if (currentSlide == 4) {
+                d3.select("text").text("The Gulf War (1990-1991) showed a small spike in spending.");
+                console.log(currentSlide)
+            }
+            else if (currentSlide == 5) {
+                console.log(currentSlide)
+                d3.select("text").text("The 1990s didnt see much activity, causing expenditure to stay relatively the same.");
+            }
+            else if (currentSlide == 6) {
+                console.log(currentSlide)
+                d3.select("text").text("The 9/11 (2001) attack started a spike globally. The Global War on Terrorism started here.");
+            }
+            else if (currentSlide == 7) {
+                console.log(currentSlide)
+                d3.select("text").text("In 2003, the Iraq War started, causing spending to spike even further.");
+            }
+            else if (currentSlide == 8) {
+                console.log(currentSlide)
+                d3.select("text").text("In 2011, the Iraq War ended. This can be seen by the sudden slowdown in spending, but not a decrease.");
+            }
+            else if (currentSlide == 9) {
+                console.log(currentSlide)
+                d3.select("text").text("Food for thought: Who saw the biggest increase during the Iraq War? How did major powers react to certain historical events?");
+            }
+            else if (currentSlide == 10) {
+                console.log(currentSlide)
+                d3.select("text").text("Now, please use the dropdown to filter the data by country and do your own investigation!");
+                d3.select("#button").text("Move to free exploration!")
+            }
+            else if (currentSlide == 11) {
+                console.log(currentSlide)
+                d3.select("text").text("");
+                d3.select("#button").remove();
+                d3.selectAll(".annotation-group").remove();
+                d3.select("#selectButton").style("visibility", "visible")
+            }
+            else {
+
+            }
+        })
+
+        // Scale the range of the data
+        x.domain([1960, 2018]);
+
+
+        if (temp == 0) {
+            update(d3.select("#selectButton").property("value"));
+            y.domain([d3.min(data, function(d) { return d.Value; }), d3.max(data, function(d) { return d.Value; })]);
+            // Add the Y Axis
+            svg.append("g").attr("class", "y axis").call(d3.axisLeft(y));
+            temp = 1;
+        }
+        else {
+
+        }
+
+        const header = svg.append("text").attr("x", 75).attr("y", -30).attr("fill", "black").attr("font-size", "62px").text("Military Expenditure 1960-2018 (USD)");
+
+        // gridlines in x axis function
+        function make_x_gridlines() {
+            return d3.axisBottom(x)
+                .ticks(10)
+        }
+
+        // add the X gridlines
+        svg.append("g")
+            .attr("class", "grid")
+            .attr("transform", "translate(0," + height + ")")
+            .attr("opacity", .1)
+            .call(make_x_gridlines()
+                .tickSize(-height)
+                .tickFormat("")
+            )
+
+
+        // Add the X Axis
+        svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+
+        svg.append("text")
+            .attr("class", "x label")
+            .attr("text-anchor", "end")
+            .attr("x", width/2)
+            .attr("y", height + 35)
+            .text("Year");
+
+        svg.append("text")
+            .attr("class", "y label")
+            .attr("text-anchor", "end")
+            .attr("y", -140)
+            .attr("x", -300)
+            .attr("dy", ".75em")
+            .attr("transform", "rotate(-90)")
+            .text("Spending in USD");
+
+    });
+
+
+    const type = d3.annotationLabel;
+
+/*
+    const annotations = [{
+        note: {
+            label: "Attack on US",
+            title: "9/11",
+            wrap: 150,
+            align: "left"
+        },
+        connector: {
+            end: "arrow",
+        },
+        //can use x, y directly instead of data
+        data: { Year: (2001-1960)/58 + 172/1340, Value: ((7.42E+11-3.64E+11)/(1.78E+12-3.64E+11)) + .01},
+        dy: 137,
+        dx: 162
+    },
+        {
+            note: {
+                label: "Start of war",
+                title: "Iraq War",
+                wrap: 150,
+                align: "left"
+            },
+            connector: {
+                end: "arrow",
+            },
+            //can use x, y directly instead of data
+            data: { Year: (2003-1960)/58 + 172/1340, Value: ((9.37E+11-3.64E+11)/(1.78E+12-3.64E+11)) - .017},
+            dy: -137,
+            dx: -162
+        },
+        {
+            note: {
+                label: "End of war",
+                title: "Iraq War",
+                wrap: 150,
+                align: "left"
+            },
+            connector: {
+                end: "arrow",
+            },
+            //can use x, y directly instead of data
+            data: { Year: (2011-1960)/58 + 172/1340, Value: ((1.73E+12-3.64E+11)/(1.78E+12-3.64E+11)) - .135},
+            dy: 137,
+            dx: 32
+        },
+        {
+            note: {
+                label: "Codename: Desert Shield",
+                title: "Gulf War",
+                wrap: 150,
+                align: "left"
+            },
+            connector: {
+                end: "arrow",
+            },
+            //can use x, y directly instead of data
+            data: { Year: (1990-1960)/58 + 172/1340, Value: ((7.00E+11-3.64E+11)/(1.78E+12-3.64E+11)) + .01},
+            dy: 137,
+            dx: 32
+        },
+        {
+            note: {
+                label: "",
+                title: "",
+                wrap: 150,
+                align: "left"
+            },
+            connector: {
+                end: "arrow",
+            },
+            //can use x, y directly instead of data
+            data: { Year: (1993-1960)/58 + 172/1340, Value: ((6.86E+11-3.64E+11)/(1.78E+12-3.64E+11)) + .021},
+            dy: -137,
+            dx: -92
+        },
+        {
+            note: {
+                label: "",
+                title: "No significant wars",
+                wrap: 150,
+                align: "left"
+            },
+            connector: {
+                end: "arrow",
+            },
+            //can use x, y directly instead of data
+            data: { Year: (2000-1960)/58 + 172/1340, Value: ((7.30E+11-3.64E+11)/(1.78E+12-3.64E+11)) + .015},
+            dy: -117,
+            dx: -232
+        }]
+*/
+
+
+
+    const slide1 = {
+        note: {
+            label: "Codename: Desert Shield",
+            title: "Gulf War",
+            wrap: 150,
+            align: "left"
+        },
+        connector: {
+            end: "arrow",
+        },
+        //can use x, y directly instead of data
+        data: { Year: (1990-1960)/58 + 172/1340, Value: ((7.00E+11-3.64E+11)/(1.78E+12-3.64E+11)) + .01},
+        dy: 137,
+        dx: 32,
+    };
+
+    const slide2 = {
+        note: {
+            label: "",
+            title: "",
+            wrap: 150,
+            align: "left"
+        },
+        connector: {
+            end: "arrow",
+        },
+        //can use x, y directly instead of data
+        data: { Year: (1993-1960)/58 + 172/1340, Value: ((6.86E+11-3.64E+11)/(1.78E+12-3.64E+11)) + .021},
+        dy: -137,
+        dx: -92
+    }
+
+
+    const slide2pt2 = {
+        note: {
+            label: "",
+            title: "No significant wars",
+            wrap: 150,
+            align: "left"
+        },
+        connector: {
+            end: "arrow",
+        },
+        //can use x, y directly instead of data
+        data: { Year: (2000-1960)/58 + 172/1340, Value: ((7.30E+11-3.64E+11)/(1.78E+12-3.64E+11)) + .015},
+        dy: -117,
+        dx: -232
+    }
+
+    const slide3 = {
+        note: {
+            label: "Attack on US",
+            title: "9/11",
+            wrap: 150,
+            align: "left"
+        },
+        connector: {
+            end: "arrow",
+        },
+        //can use x, y directly instead of data
+        data: { Year: (2001-1960)/58 + 172/1340, Value: ((7.42E+11-3.64E+11)/(1.78E+12-3.64E+11)) + .01},
+        dy: 137,
+        dx: 162
+    };
+
+    const slide4 = {
+        note: {
+            label: "Start of war",
+            title: "Iraq War",
+            wrap: 150,
+            align: "left"
+        },
+        connector: {
+            end: "arrow",
+        },
+        //can use x, y directly instead of data
+        data: { Year: (2003-1960)/58 + 172/1340, Value: ((9.37E+11-3.64E+11)/(1.78E+12-3.64E+11)) - .017},
+        dy: -137,
+        dx: -162
+    };
+
+    const slide5 = {
+        note: {
+            label: "End of war",
+            title: "Iraq War",
+            wrap: 150,
+            align: "left"
+        },
+        connector: {
+            end: "arrow",
+        },
+        //can use x, y directly instead of data
+        data: { Year: (2011-1960)/58 + 172/1340, Value: ((1.73E+12-3.64E+11)/(1.78E+12-3.64E+11)) - .135},
+        dy: 137,
+        dx: 32
+    };
+
+    var annotations = [slide1,slide2,slide2pt2,slide3,slide4,slide5];
+
+    const makeAnnotations = d3.annotation()
+        .type(type)
+        //accessors & accessorsInverse not needed
+        //if using x, y in annotations JSON
+        .accessors({
+            x: d => x(d.Year),
+            y: d => y(d.Value)
+        })
+        .accessorsInverse({
+            date: d => x.invert(d.x),
+            close: d => y.invert(d.y)
+        })
+        .annotations(annotations)
+
+    d3.select("svg")
+        .append("g")
+        .attr("class", "annotation-group")
+        .call(makeAnnotations)
+
+
+
+</script>
+</body>
+</html>
