@@ -164,7 +164,7 @@
             y.domain([d3.min(data, function(d) { return d.Value; }), d3.max(dataFilter, function(d) { return d.Value; })]);
             d3.select(".y").transition(d3.transition()
                 .duration(1000)).call(d3.axisLeft(y));
-            // Give these new data to update line
+            // Update line
             line
                 .datum(dataFilter)
                 .transition()
@@ -174,7 +174,6 @@
 
         // When the button is changed, run the updateChart function
         d3.select("#selectButton").on("change", function(d) {
-            // recover the option that has been chosen
             var selectedOption = d3.select(this).property("value")
             // run the updateChart function with this selected option
             update(selectedOption)
@@ -299,101 +298,6 @@
 
 
     const type = d3.annotationLabel;
-
-/*
-    const annotations = [{
-        note: {
-            label: "Attack on US",
-            title: "9/11",
-            wrap: 150,
-            align: "left"
-        },
-        connector: {
-            end: "arrow",
-        },
-        //can use x, y directly instead of data
-        data: { Year: (2001-1960)/58 + 172/1340, Value: ((7.42E+11-3.64E+11)/(1.78E+12-3.64E+11)) + .01},
-        dy: 137,
-        dx: 162
-    },
-        {
-            note: {
-                label: "Start of war",
-                title: "Iraq War",
-                wrap: 150,
-                align: "left"
-            },
-            connector: {
-                end: "arrow",
-            },
-            //can use x, y directly instead of data
-            data: { Year: (2003-1960)/58 + 172/1340, Value: ((9.37E+11-3.64E+11)/(1.78E+12-3.64E+11)) - .017},
-            dy: -137,
-            dx: -162
-        },
-        {
-            note: {
-                label: "End of war",
-                title: "Iraq War",
-                wrap: 150,
-                align: "left"
-            },
-            connector: {
-                end: "arrow",
-            },
-            //can use x, y directly instead of data
-            data: { Year: (2011-1960)/58 + 172/1340, Value: ((1.73E+12-3.64E+11)/(1.78E+12-3.64E+11)) - .135},
-            dy: 137,
-            dx: 32
-        },
-        {
-            note: {
-                label: "Codename: Desert Shield",
-                title: "Gulf War",
-                wrap: 150,
-                align: "left"
-            },
-            connector: {
-                end: "arrow",
-            },
-            //can use x, y directly instead of data
-            data: { Year: (1990-1960)/58 + 172/1340, Value: ((7.00E+11-3.64E+11)/(1.78E+12-3.64E+11)) + .01},
-            dy: 137,
-            dx: 32
-        },
-        {
-            note: {
-                label: "",
-                title: "",
-                wrap: 150,
-                align: "left"
-            },
-            connector: {
-                end: "arrow",
-            },
-            //can use x, y directly instead of data
-            data: { Year: (1993-1960)/58 + 172/1340, Value: ((6.86E+11-3.64E+11)/(1.78E+12-3.64E+11)) + .021},
-            dy: -137,
-            dx: -92
-        },
-        {
-            note: {
-                label: "",
-                title: "No significant wars",
-                wrap: 150,
-                align: "left"
-            },
-            connector: {
-                end: "arrow",
-            },
-            //can use x, y directly instead of data
-            data: { Year: (2000-1960)/58 + 172/1340, Value: ((7.30E+11-3.64E+11)/(1.78E+12-3.64E+11)) + .015},
-            dy: -117,
-            dx: -232
-        }]
-*/
-
-
 
     const slide1 = {
         note: {
